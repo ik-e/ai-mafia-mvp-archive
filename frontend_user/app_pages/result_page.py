@@ -480,7 +480,7 @@ def _render_actions(*, show_feedback: bool) -> None:
 
     with st.container(key="result-actions"):
         if show_feedback:
-            feedback_column, home_column = st.columns(2)
+            feedback_column, new_game_column, home_column = st.columns(3)
             if feedback_column.button(
                 "피드백 남기기",
                 key="result.feedback",
@@ -494,20 +494,20 @@ def _render_actions(*, show_feedback: bool) -> None:
                 st.rerun()
         else:
             new_game_column, home_column = st.columns(2)
-            if new_game_column.button(
-                "새 게임",
-                key="result.new_game",
-                use_container_width=True,
-            ):
-                st.session_state["navigation.page"] = "create"
-                st.session_state.pop("game.game_id", None)
-                st.session_state.pop("game.latest_snapshot", None)
-                # 이전 생성 성공 receipt가 새 설정을 건너뛰지 않게 제거한다. 결과 불명
-                # 요청의 key와 body는 중복 생성 방지를 위해 F2 재시도 흐름에 그대로 넘긴다.
-                previous = st.session_state.get("game.create_pending")
-                if isinstance(previous, dict) and previous.get("status") == "SUCCEEDED":
-                    st.session_state.pop("game.create_pending", None)
-                st.rerun()
+        if new_game_column.button(
+            "새 게임",
+            key="result.new_game",
+            use_container_width=True,
+        ):
+            st.session_state["navigation.page"] = "create"
+            st.session_state.pop("game.game_id", None)
+            st.session_state.pop("game.latest_snapshot", None)
+            # 이전 생성 성공 receipt가 새 설정을 건너뛰지 않게 제거한다. 결과 불명
+            # 요청의 key와 body는 중복 생성 방지를 위해 F2 재시도 흐름에 그대로 넘긴다.
+            previous = st.session_state.get("game.create_pending")
+            if isinstance(previous, dict) and previous.get("status") == "SUCCEEDED":
+                st.session_state.pop("game.create_pending", None)
+            st.rerun()
         if home_column.button(
             "홈으로",
             key="result.home",

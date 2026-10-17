@@ -10,6 +10,7 @@ command service와 GameEngine이 stale·중복·fallback·제출 여부를 판�
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import json
 import os
 import socket
@@ -100,8 +101,29 @@ def isolated_boundaries(monkeypatch):
     def reject_external(*args, **kwargs):
         pytest.fail("이 시험에서는 외부 네트워크와 실제 DB 연결을 사용할 수 없습니다.")
 
+    socket_connect = socket.socket.connect
+
+    def reject_non_loopback(sock, address):
+        """외부 접속은 차단하고 Windows asyncio가 쓰는 로컬 소켓 연결은 허용한다.
+
+        Windows ProactorEventLoop는 내부 알림 채널을 만들 때 loopback TCP
+        socket pair를 사용한다. 모든 connect를 일괄 실패시키면 테스트가 실제
+        서비스 경계를 호출하기도 전에 이벤트 루프 생성부터 실패하므로, IP로
+        판별할 수 있는 loopback 주소에 한해서 원래 connect 동작을 유지한다.
+        호스트명·잘못된 주소·비 loopback 주소는 외부 접속으로 간주해 거부한다.
+        """
+
+        host = address[0] if isinstance(address, tuple) and address else None
+        try:
+            is_loopback = ipaddress.ip_address(host).is_loopback
+        except (TypeError, ValueError):
+            is_loopback = False
+        if not is_loopback:
+            reject_external(sock, address)
+        return socket_connect(sock, address)
+
     monkeypatch.setattr(psycopg, "connect", reject_external)
-    monkeypatch.setattr(socket.socket, "connect", reject_external)
+    monkeypatch.setattr(socket.socket, "connect", reject_non_loopback)
     monkeypatch.setattr(socket, "create_connection", reject_external)
     return sink
 

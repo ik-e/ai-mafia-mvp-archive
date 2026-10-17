@@ -14,6 +14,8 @@ GRANT USAGE ON SCHEMA public TO :"app_user";
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO :"app_user";
 GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO :"app_user";
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO :"app_user";
+-- game_events는 영구 append-only 원장이므로 runtime 계정이 수정·삭제할 수 없다.
+REVOKE UPDATE, DELETE ON TABLE public.game_events FROM :"app_user";
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO :"app_user";
 ALTER DEFAULT PRIVILEGES IN SCHEMA public

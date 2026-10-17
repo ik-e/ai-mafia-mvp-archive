@@ -307,9 +307,8 @@ def _render_role_settings(client: ApiClient, *, in_flight: bool) -> tuple[dict |
         key = f"game.create_abilities.{faction}"
         previous = st.session_state.get(key, [])
         previous = [value for value in previous if value in options] if isinstance(previous, list) else []
-        # 시민은 4개 능력 중 3개까지, 마피아는 공격을 포함한 전체 3개까지
-        # 선택하게 한다. 공격은 별도 checkbox가 아닌 기본 능력이므로, 마피아의
-        # 실제 추가 선택 수는 2개이며 화면 문구에도 전체 기준을 명시한다.
+        # 시민은 네 능력 중 최대 세 개, 마피아는 필수 공격 외 최대 두 개를 고른다.
+        # faction별 위젯 key를 분리해 진영을 바꿨다가 돌아와도 선택을 섞지 않는다.
         max_abilities = 3
         max_optional = max_abilities - len(mandatory)
         selection_label = (
@@ -320,21 +319,16 @@ def _render_role_settings(client: ApiClient, *, in_flight: bool) -> tuple[dict |
         st.markdown(selection_label)
         if mandatory:
             st.caption("공격은 기본 능력으로 포함됩니다.")
-        selected = []
-        for ability_id in options:
-            option_key = f"{key}.{ability_id}"
-            if option_key not in st.session_state:
-                st.session_state[option_key] = ability_id in previous
-            checked = st.checkbox(
-                allowed[ability_id]["label"],
-                key=option_key,
-                disabled=in_flight or (len(selected) >= max_optional and not st.session_state[option_key]),
-            )
-            if checked:
-                selected.append(ability_id)
-        # 다음 rerun에서도 현재 선택을 복원하되, 최대 개수 밖의 값은 저장하지 않는다.
-        selected = selected[:max_optional]
-        st.session_state[key] = selected
+        selected = st.multiselect(
+            "사용할 능력",
+            options=options,
+            default=previous,
+            format_func=lambda ability_id: allowed[ability_id]["label"],
+            max_selections=max_optional,
+            key=key,
+            disabled=in_flight,
+        )
+        selected = [ability_id for ability_id in selected if ability_id in options]
         ability_ids = mandatory + selected
         try:
             name = normalize_role_name(name)

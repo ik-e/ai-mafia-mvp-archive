@@ -150,7 +150,7 @@ def _window_payload(payload: Mapping, row: Mapping, record: Any) -> dict:
     if not actions:
         raise ValueError("저장된 window hint는 인간용 완전한 snapshot이 필요합니다.")
     targets = payload["valid_targets"]
-    if not isinstance(targets, list) or len(targets) > 8 or (payload["kind"] == "SPEECH" and targets):
+    if not isinstance(targets, list) or len(targets) > 9 or (payload["kind"] == "SPEECH" and targets):
         raise ValueError("window의 후보 목록이 올바르지 않습니다.")
     seats = []
     for target in targets:

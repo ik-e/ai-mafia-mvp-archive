@@ -8,4 +8,6 @@ COPY backend/migrations/*.sql /docker-entrypoint-initdb.d/
 COPY docker/postgres/init/999-grant-app-role.sh /docker-entrypoint-initdb.d/999-grant-app-role.sh
 
 RUN chmod 0755 /docker-entrypoint-initdb.d/000-create-app-role.sh \
-    /docker-entrypoint-initdb.d/999-grant-app-role.sh
+    /docker-entrypoint-initdb.d/999-grant-app-role.sh \
+    && sed -i 's/\r$//' /docker-entrypoint-initdb.d/000-create-app-role.sh \
+        /docker-entrypoint-initdb.d/999-grant-app-role.sh

@@ -135,6 +135,11 @@ def render(client: ApiClient) -> None:
         st.session_state["navigation.page"] = "create"
         st.rerun()
 
+    if st.button("일반 피드백", key="home.feedback"):
+        _invalidate_games()
+        st.session_state["navigation.page"] = "feedback"
+        st.rerun()
+
     home_tab, rules_tab = st.tabs(["홈", "게임 규칙"])
     with home_tab:
         # UUID를 확인하기 전에는 다른 게임의 시나리오·진행 상태를 노출하지 않는다.

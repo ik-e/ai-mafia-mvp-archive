@@ -1522,7 +1522,7 @@ Resource에 넣지 않는다.
 | `deadline_at` | `SPEECH`이면 `null`, 나머지는 UTC RFC 3339 시각 |
 | `turn_player_id` | `SPEECH`이면 subject UUID, 나머지는 `null` |
 | `allowed_tools` | 아래 matrix와 정확히 같은 Tool 이름 배열 |
-| `valid_targets` | 아래 target 0~8개, 좌석 오름차순 |
+| `valid_targets` | 아래 target 0~9개, 좌석 오름차순 |
 
 target object는 `player_id` UUID와 `display_name` 1~40자만 가진다. 숨은 role이나
 현재 선택 수는 넣지 않는다. `player_id`는 배열 안에서 중복되지 않고 같은 `public`
@@ -1540,7 +1540,8 @@ target에만 자기 자신을 허용한다.
 `FINAL_ACCUSATION`→`FINAL_VOTE`만 허용한다. `allowed_tools`는 표의 순서로 중복 없이
 직렬화한다. 첫날 판정은 Backend의 `DAY_DISCUSSION`, `day_number=1`을 사용한다.
 MCP는 `SPEECH`의 두 허용 배열을 검증하며 최종 PASS 거부는 Backend가 담당한다.
-`SPEECH`의 `valid_targets`는 비어 있고 나머지 window는 1~8개다.
+`SPEECH`의 `valid_targets`는 비어 있고 나머지 window는 1~9개다. 9인 게임에서
+의사는 자기 자신을 포함한 생존 참가자 9명을 모두 보호 대상으로 선택할 수 있다.
 `opened_state_version`은 envelope `state_version` 이하이고 timed window의
 `deadline_at`은 성공 응답의 `server_time`보다 뒤여야 한다.
 

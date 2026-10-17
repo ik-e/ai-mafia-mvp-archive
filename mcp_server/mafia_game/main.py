@@ -94,7 +94,9 @@ class McpDiagnosticMiddleware:
                 "tools/call": "mcp.tools.call", "prompts/list": "mcp.prompts.list",
                 "prompts/get": "mcp.prompts.get", "ping": "mcp.ping",
             }
-            diagnostic.operation = operations.get(method, "mcp.http") if isinstance(method, str) else "mcp.http"
+            diagnostic.operation = (
+                operations.get(method, "mcp.http") if isinstance(method, str) else "mcp.http"
+            )
             request_body.clear()
             response_body.clear()
             diagnostic.emit(status, error_class=error_class)
@@ -162,9 +164,12 @@ def run() -> None:
     backend_url = os.environ.get("BACKEND_API_URL", "http://127.0.0.1:8000")
     host = os.environ.get("MCP_LISTEN_HOST", "127.0.0.1")
     port = int(os.environ.get("MCP_LISTEN_PORT", "8100"))
+    allow_insecure_http = os.environ.get(
+        "BACKEND_API_ALLOW_INSECURE_HTTP", "false"
+    ).lower() == "true"
     backend = MinimalBackendContextClient(
         backend_url,
-        allow_insecure_http=os.environ.get("BACKEND_API_ALLOW_INSECURE_HTTP", "false").lower() == "true",
+        allow_insecure_http=allow_insecure_http,
     )
     DiagnosticSpan("runtime.startup").emit("ok")
     # Uvicorn이 formatter를 다시 덮어쓰거나 요청 URL을 별도 access logger로 내보내지 않는다.

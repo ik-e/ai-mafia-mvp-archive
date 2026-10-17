@@ -22,6 +22,7 @@ from frontend_user.app_pages.home_page import load_games, should_load_games  # n
 from frontend_user.app_pages.home_page import render as render_home  # noqa: E402
 from frontend_user.app_pages.result_page import render as render_result  # noqa: E402
 from frontend_user.app_pages.role_reveal_page import render as render_role_reveal  # noqa: E402
+from frontend_user.app_pages.settings_page import render as render_settings  # noqa: E402
 from frontend_user.components.identity_bridge import (  # noqa: E402
     IDENTITY_COMPONENT_CHANGED_SESSION_KEY,
     load_identity,
@@ -83,6 +84,7 @@ def main() -> None:
     st.session_state["game.client"] = client
     if st.session_state.get(IDENTITY_WARNING_SESSION_KEY):
         st.warning("브라우저 저장소를 사용할 수 없어 이번 세션에서만 게임을 복구할 수 있어요.")
+    render_settings()
     page = st.session_state.get("navigation.page", "home")
     page = sync_page_navigation(page)
     maintain_speech_queue(user_id=user_id, page=page, game_id=st.session_state.get("game.game_id"))
