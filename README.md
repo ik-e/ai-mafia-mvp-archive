@@ -65,6 +65,24 @@ AI MAFIA는 인간 1명과 AI 5~8명이 함께 플레이하는 소셜 디덕션 
 
 [프로젝트 기획서](docs/arrangement/00_AI_MAFIA_PROJECT_PROPOSAL.md) · [프로젝트 수행과정](docs/arrangement/08_PROJECT_EXECUTION_REPORT.md)
 
+### Docker Compose로 전체 이미지 빌드·push
+
+소스에서 Backend·Frontend·MCP·PostgreSQL·Redis 이미지를 한 번에 만들 때는
+`docker-compose.build.yml`을 사용합니다. 이 파일은 실행용 `docker-compose.yml`과
+분리되어 있으며 Docker Hub의 `ikonly/ai-mafia-*` 태그를 그대로 생성합니다.
+
+```powershell
+docker login
+docker compose -f docker-compose.build.yml build
+docker compose -f docker-compose.build.yml push
+```
+
+캐시를 사용하지 않고 다시 만들려면 다음처럼 실행합니다.
+
+```powershell
+docker compose -f docker-compose.build.yml build --no-cache
+```
+
 <a id="features"></a>
 
 ## 주요 기능과 화면
