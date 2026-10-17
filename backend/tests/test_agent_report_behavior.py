@@ -692,6 +692,30 @@ def test_agt_008_mcp_client_rejects_foreign_context_binding(make_case, violation
 
 
 @SAMPLES
+def test_agt_008_mcp_client_rejects_more_than_nine_targets(make_case):
+    """9인 상한은 허용하되 초과 후보는 MCP 경계에서 거부한다."""
+
+    case = make_case(phase=GamePhase.NIGHT_ACTION, role=PlayerRole.DOCTOR,
+                     day=1, player_count=9)
+
+    def add_excess_targets(payload):
+        targets = payload["data"]["valid_targets"]
+        targets.extend(deepcopy(targets[:1]) for _ in range(10 - len(targets)))
+
+    case.mutate_context = add_excess_targets
+
+    async def read_rejected_context():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(case.handle_request)) as http_client:
+            client = case.client(http_client)
+            with pytest.raises(McpContextError) as failure:
+                await client.get_context(capability="synthetic-unused", scope="turn")
+            assert failure.value.code == "MCP_CONTEXT_CONTRACT"
+            assert client._last_context is None
+
+    asyncio.run(read_rejected_context())
+
+
+@SAMPLES
 @pytest.mark.parametrize("phase", [GamePhase.DAY_DISCUSSION, GamePhase.DAY_VOTE, GamePhase.NIGHT_ACTION])
 def test_agt_008_private_changes_do_not_interfere_with_actor_context(make_case, sample_index, phase):
     """다른 사람의 역할·개인 자료·수신자 위조가 공개·본인·행동 Context를 바꾸지 않는다.

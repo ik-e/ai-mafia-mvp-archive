@@ -841,10 +841,12 @@ def _attention_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
         # AI 발언마다 교체되는 예약 window를 인간의 새 행동으로 취급하지 않는다.
         # 같은 토론은 하나의 focus 단위이며 저장·재개로 deadline이 바뀌면 새로 안내한다.
         window_id = f"{game.get('game_id')}:{game.get('phase')}:{window.get('deadline_at')}"
-    # 상단에 중복으로 노출되던 "새 행동" 문구는 제거한다. 현재 행동과 남은 시간은
-    # 화면 하단의 고정 상태 바에서 계속 제공하므로, 접근성 컴포넌트에도 시각 문구를
-    # 전달하지 않아 본문과 안내가 겹치지 않게 한다.
+    # 임계 경고가 있으면 그 문구를, 아니면 현재 허용된 새 행동을 한 번만 알린다.
+    # status가 없을 때는 입력 권한이 없으므로 추측성 안내를 만들지 않는다.
     announcement = None
+    if status is not None:
+        label, _, warning = status
+        announcement = warning or f"새 행동: {label}."
     return {
         "active": status is not None and window_id is not None,
         "window_id": window_id,

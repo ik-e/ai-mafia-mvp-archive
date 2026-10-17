@@ -282,7 +282,7 @@ class FastMcpGameContextClient:
                 if data["window_id"] != str(window) or data["window_kind"] != kind or data["allowed_tools"] != tools or type(data["opened_state_version"]) is not int or not 1 <= data["opened_state_version"] <= version or type(data["cycle"]) is not int or data["cycle"] not in {1, 2}:
                     raise ValueError
                 targets = data["valid_targets"]
-                if not isinstance(targets, list) or len(targets) > 8:
+                if not isinstance(targets, list) or len(targets) > 9:
                     raise ValueError
                 ids = []
                 for target in targets:

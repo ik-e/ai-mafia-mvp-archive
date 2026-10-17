@@ -49,6 +49,15 @@ Backend·Game Engine을 호출하고 실패를 성공으로 바꾸는 mock은 �
 변경하지 않고 후속 계약 조정 대상으로 남긴다. 합성 상태·저장소를 사용한 범위와
 시나리오별 결과는 [시험 보고서](../../arrangement/07_AGENT_TEST_RESULT_REPORT.md)를 따른다.
 
+### 2026-10-17 후속 계약 조정: 9인 의사 후보 상한
+
+후속 검증에서 9인 전원 생존 시 의사가 자신을 포함한 생존자 9명을 보호 대상으로
+선택할 수 있도록 API 명세 8.2절, Backend MCP client, 동기화 event 검증 상한을
+9로 통일했다. 9개 후보 허용과 10개 후보 거부를 합성 입력으로 확인했고,
+`AGENT_REPORT_SAMPLES=50` Backend 복구 시험은 6,400개 통과했다. 이 검증은 외부
+LLM이나 실제 DB를 호출하지 않았다. 위의 6,350회·54개 실패 결과는 수정 전 이력으로
+보존하며, 현재 계약과 검증 상태는 API 명세 및 루트 README를 따른다.
+
 > **MVP 단순화 프로파일(2026-09-05):** DB·스키마·migration 이력은 보존한다.
 > OAuth/OIDC·Front HMAC, custom MCP bootstrap/capability/nonce/session registry,
 > Agent lease/fencing/job 상태 머신, LLM 비용·usage·자동 failover, Redis outbox

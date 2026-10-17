@@ -7,6 +7,7 @@ import json
 import logging
 import math
 import re
+from contextlib import suppress
 from datetime import UTC, datetime
 from time import monotonic
 from typing import Any, Protocol
@@ -89,10 +90,8 @@ class DiagnosticSpan:
             "duration_ms": round(max(0.0, monotonic() - self.started_at) * 1000, 3),
             "error_class": _safe_error_class(error_class),
         }
-        try:
+        with suppress(Exception):
             _DIAGNOSTIC_LOGGER.info(record)
-        except Exception:
-            pass
 
     def __enter__(self) -> DiagnosticSpan:
         self.emit("started")
@@ -224,7 +223,11 @@ class MinimalBackendContextClient:
         # 사용한다. 기본값은 기존처럼 loopback·HTTPS만 허용해 임의 endpoint
         # 호출을 막는다.
         private_network_http = parsed.scheme == "http" and allow_insecure_http
-        if parsed.scheme == "http" and parsed.hostname not in {"127.0.0.1", "localhost", "::1"} and not private_network_http:
+        if (
+            parsed.scheme == "http"
+            and parsed.hostname not in {"127.0.0.1", "localhost", "::1"}
+            and not private_network_http
+        ):
             raise ValueError("plain HTTP is allowed only for loopback development")
         self._base_url = backend_api_url.rstrip("/")
         self._client = client or httpx.AsyncClient(timeout=10.0, trust_env=False)

@@ -73,6 +73,8 @@ MCP endpoint는 `http://127.0.0.1:8100/mcp`다. FastMCP 표준 protocol session�
 아래 WU-M10 수치는 삭제 전 실행한 이력이며 현재 checkout에서 같은 pytest 명령을
 재실행할 수 없다. 현재 최소 확인은 `python -m compileall mafia_game`과
 `ruff check mafia_game`, 저장소 루트의 `git diff --check`를 사용한다.
+2026-10-17 현재 compileall과 전체 Ruff가 통과한다. WU-M5 진단 sink 실패의 비간섭성과 WU-M3 Engine URL의 허용·거부 경계를 합성 입력으로 수동 확인했다. WU-M8 기동 smoke에서는 임시 loopback 포트의 `/mcp` initialize가 HTTP 200을 반환했고 종료 후 listener가 사라졌다. Backend·DB 연결 검증은 포함하지 않는다.
+Resource 등록부의 규칙 문장 길이와 import 순서는 WU-M3 형식 정리 후 해당 파일 검사를 통과했다.
 
 ### 2026-09-08 WU-M10 팀 DB 적용 사전 검증
 

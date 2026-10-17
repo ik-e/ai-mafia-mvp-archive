@@ -100,7 +100,6 @@ def _speech_recovery_view(monkeypatch):
     monkeypatch.setattr(action_panel, "_render_status_bar_tick", Mock())
     monkeypatch.setattr(action_panel, "SpeechQueue", _SpeechQueueDouble)
     monkeypatch.setattr(game_page, "_sync_snapshot", lambda **kwargs: kwargs["snapshot"])
-    monkeypatch.setattr(game_page.vote_insights, "render", Mock())
     view = AppTest.from_function(_speech_recovery_app, args=(current, client)).run()
     assert not view.exception
     return view, current, client
@@ -364,7 +363,6 @@ def test_speech_fifo_connection_change_cannot_consume_enter(monkeypatch):
         return latest
 
     monkeypatch.setattr(game_page, "_sync_snapshot", sync)
-    monkeypatch.setattr(game_page.vote_insights, "render", Mock())
     monkeypatch.setattr(action_panel, "_render_status_bar_tick", Mock())
     monkeypatch.setattr(action_panel, "SpeechQueue", _SpeechQueueDouble)
     client = Mock(user_id="synthetic")
@@ -488,7 +486,6 @@ def test_live_tick_updates_public_region_without_rendering_inputs(monkeypatch):
     rerun = Mock()
     monkeypatch.setattr(game_page, "_render_timeline", timeline)
     monkeypatch.setattr(game_page, "_render_agent_activity", Mock())
-    monkeypatch.setattr(game_page.vote_insights, "render", Mock())
     monkeypatch.setattr(game_page, "render_action_panel", inputs)
     monkeypatch.setattr(game_page.st, "rerun", rerun)
     game_page._render_live_updates.__wrapped__(client=Mock(), snapshot=current)
@@ -608,7 +605,6 @@ def test_streamlit_assigns_sync_clock_and_inputs_to_separate_render_scopes(monke
         owners["clock"] = fragment_owner()
 
     monkeypatch.setattr(game_page, "mount_sse", mount)
-    monkeypatch.setattr(game_page.vote_insights, "render", Mock())
     monkeypatch.setattr(action_panel, input_function, render_input)
     monkeypatch.setattr(action_panel, "_mount_action_attention", attention)
     current = _discussion_snapshot()
@@ -1365,7 +1361,7 @@ def test_browser_sync_transport_lifecycle_with_mock_fetch():
     node = shutil.which("node")
     if node is None:
         pytest.skip("브라우저 sync JS 검증에는 Node.js가 필요합니다.")
-    source = (Path(__file__).parents[1] / "components/browser_components/sync/index.js").read_text()
+    source = (Path(__file__).parents[1] / "components/browser_components/sync/index.js").read_text(encoding="utf-8")
     script = r"""
 import assert from 'node:assert/strict';
 const {default: render} = await import('data:text/javascript;base64,' + Buffer.from(SOURCE_TEXT).toString('base64'));

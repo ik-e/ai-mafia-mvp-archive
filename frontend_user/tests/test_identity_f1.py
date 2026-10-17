@@ -518,7 +518,7 @@ def test_browser_identity_refresh_restore_and_storage_failure_lifecycle():
     node = shutil.which("node")
     if node is None:
         pytest.skip("브라우저 bridge JS 검증에는 Node.js가 필요합니다.")
-    source = (Path(__file__).parents[1] / "components/browser_components/identity/index.js").read_text()
+    source = (Path(__file__).parents[1] / "components/browser_components/identity/index.js").read_text(encoding="utf-8")
     script = r"""
 import assert from 'node:assert/strict';
 const {default: render} = await import('data:text/javascript;base64,' + Buffer.from(SOURCE).toString('base64'));

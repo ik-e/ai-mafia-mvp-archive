@@ -363,9 +363,9 @@ def render(snapshot: dict[str, Any]) -> None:
         with left:
             _render_players(snapshot=snapshot, me=me, phase=str(phase), client=client)
         with center:
-            # 공개 대화는 행동 단계에서 숨기되, sync fragment는 유지해 제출 대기
-            # 중에도 서버의 마감·사망·종료 전이를 계속 반영한다.
-            _render_live_updates(client=client, snapshot=snapshot, show_timeline=False)
+            # 입력 단계에서도 공개 기록을 유지하고 sync fragment에서 마감·사망·종료
+            # 전이를 함께 반영해 사용자가 최신 공개 상황과 행동을 나란히 확인한다.
+            _render_live_updates(client=client, snapshot=snapshot)
             _render_visible_action_panel(
                 client=client,
                 game_id=str(game.get("game_id")),
@@ -1137,11 +1137,11 @@ def _render_timeline(
 def _render_custom_private_information(
     *, snapshot: dict[str, Any], me: dict[str, Any], client: Any,
 ) -> None:
-    """본인 전용 역할·조사·특수 직업 정보를 왼쪽 카드 아래에 접어 표시한다.
+    """본인 전용 역할 설명과 확정 결과를 왼쪽 카드 아래에 평문으로 표시한다.
 
     세 정보는 Backend의 소유자 전용 projection과 조회 응답에서만 읽는다. 각
-    expander를 기본 접힘으로 두어 플레이어 목록을 압박하지 않으면서도, 공개
-    대화·다른 플레이어 정보와 섞이지 않는 개인 정보 영역을 유지한다.
+    이름·설명은 Markdown으로 해석하지 않고, 공개 대화·다른 플레이어 정보와
+    섞이지 않는 개인 정보 영역에 표시한다.
     """
 
     description = custom_role_description(me)
@@ -1159,21 +1159,8 @@ def _render_custom_private_information(
                 description = f"{description}\n{ability}" if description else ability
 
     if description:
-        with st.expander("🔒 내 역할 정보", expanded=False):
-            lines = []
-            for line in str(description).splitlines():
-                heading, separator, body = line.partition(":")
-                if separator:
-                    lines.append(
-                        f'<div style="margin:.25rem 0;line-height:1.45;">'
-                        f'<strong>{escape(heading)}:</strong> {escape(body.strip())}</div>'
-                    )
-                else:
-                    lines.append(
-                        f'<div style="margin:.25rem 0;line-height:1.45;">'
-                        f'<strong>{escape(line)}</strong></div>'
-                    )
-            st.markdown("".join(lines), unsafe_allow_html=True)
+        st.markdown("**🔒 내 역할 정보**")
+        st.text(description)
 
     _render_private_results(snapshot=snapshot, client=client)
 
@@ -1194,20 +1181,17 @@ def _render_private_results(*, snapshot: dict[str, Any], client: Any) -> None:
     special_scope = special_roles_scope(st.session_state, snapshot)
     if not results and not can_view_special_roles:
         return
-    with st.expander("🔎 나에게만 공개된 결과", expanded=False):
-        if results:
-            st.markdown("**조사 결과**")
-            for result in results:
-                # 공개 이름에 Markdown·HTML이 있어도 링크나 이미지로 해석하지 않는다.
-                st.markdown(
-                    f'<div style="margin:.35rem 0;line-height:1.45;">{escape(result)}</div>',
-                    unsafe_allow_html=True,
-                )
-        if can_view_special_roles:
-            st.markdown("**특수 직업 조회**")
-            st.caption("첫 밤 종료 후 조회할 수 있습니다.")
-            if special_scope is not None:
-                _render_special_roles(client=client, snapshot=snapshot)
+    st.markdown("**🔎 나에게만 공개된 결과**")
+    if results:
+        st.markdown("**조사 결과**")
+        for result in results:
+            # Backend 공개 이름은 임의 문자열이므로 Markdown·HTML 렌더러에 넘기지 않는다.
+            st.text(result)
+    if can_view_special_roles:
+        st.markdown("**특수 직업 조회**")
+        st.caption("첫 밤 종료 후 조회할 수 있습니다.")
+        if special_scope is not None:
+            _render_special_roles(client=client, snapshot=snapshot)
 
 
 def _player_conversation_events(snapshot: dict[str, Any]) -> list[dict[str, Any]]:
@@ -2097,6 +2081,7 @@ def _render_save_confirmation_dialog(*, game_id: str, snapshot: dict[str, Any], 
             phase_col.caption(cycle)
             time_col.metric("남은 시간", remaining_text)
         if exiting:
+            st.caption("마지막으로 확정된 진행 상황을 기준으로 저장합니다.")
             st.caption(
                 "저장하고 나가면 나중에 이어서 플레이할 수 있으며, "
                 "게임 삭제를 선택하면 이 게임의 진행 상황과 기록이 삭제되며 복구할 수 없습니다."
@@ -2293,9 +2278,7 @@ def _render_special_roles(*, client: Any, snapshot: dict[str, Any]) -> None:
         for row in stored.get("roles", []):
             role = "탐정" if row["role"] == "DETECTIVE" else "의사"
             status = "생존" if row["alive"] else "사망"
-            st.markdown(
-                f"**{escape(row['display_name'])}** · **{role}** · {status}"
-            )
+            st.text(f"{row['display_name']} · {role} · {status}")
         if stored.get("roles") == []:
             st.text("조회 가능한 특수 직업이 없습니다.")
 

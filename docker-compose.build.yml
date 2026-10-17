@@ -1,0 +1,30 @@
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
+    image: shs5029/ai-mafia-postgres:latest
+
+  redis:
+    build:
+      context: .
+      dockerfile: docker/redis/Dockerfile
+    image: shs5029/ai-mafia-redis:latest
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+    image: shs5029/ai-mafia-backend:latest
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+    image: shs5029/ai-mafia-frontend:latest
+
+  mcp:
+    build:
+      context: .
+      dockerfile: docker/mcp/Dockerfile
+    image: shs5029/ai-mafia-mcp:latest

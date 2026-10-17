@@ -65,12 +65,31 @@ AI MAFIA는 인간 1명과 AI 5~8명이 함께 플레이하는 소셜 디덕션 
 
 [프로젝트 기획서](docs/arrangement/00_AI_MAFIA_PROJECT_PROPOSAL.md) · [프로젝트 수행과정](docs/arrangement/08_PROJECT_EXECUTION_REPORT.md)
 
+### Docker Compose로 전체 이미지 빌드·push
+
+소스에서 Backend·Frontend·MCP·PostgreSQL·Redis 이미지를 한 번에 만들 때는
+`docker-compose.build.yml`을 사용합니다. 이 파일은 실행용 `docker-compose.yml`과
+분리되어 있으며 실행 Compose와 같은 Docker Hub `shs5029/ai-mafia-*` 태그를 생성합니다.
+
+```powershell
+docker login
+docker compose -f docker-compose.build.yml build
+docker compose -f docker-compose.build.yml push
+```
+
+캐시를 사용하지 않고 다시 만들려면 다음처럼 실행합니다.
+
+```powershell
+docker compose -f docker-compose.build.yml build --no-cache
+```
+
 <a id="features"></a>
 
 ## 주요 기능과 화면
 
 | 기능 | 사용자 경험 |
 | --- | --- |
+| 홈·일반 피드백 | 저장 게임 목록을 확인하고, 일반 피드백 화면으로 이동 |
 | AI와 대화·추리 | 공개 채팅에서 의심과 근거를 주고받고, 역할별로 조사·보호·공격·투표 수행 |
 | 커스텀 직업 | 인간 플레이어의 직업명과 능력을 구성하고, 허용된 단계에서 사용 |
 | 저장·재개 | 진행 중인 게임을 저장하고 상태·잔여 시간을 복원하여 이어서 플레이 |
@@ -380,11 +399,11 @@ docker compose --env-file .env.deploy down
 | Agent 행동·복구 반복 시험 | 127개 변형 × 50회 = 6,350회, **6,296 통과·54 실패** | 실제 Backend 판정 코드 + 합성 상태·fake Provider/MCP/저장소. LLM 추론 정확도 시험 아님 |
 | 병렬 투표 실게임 | 두 일반 투표 창, AI 13표 모두 `AGENT` | 해당 게임의 기록. 재투표·장애·다중 게임 전체 보장 아님 |
 
-Agent 시험의 실패는 9인 전원 생존 시 의사가 선택 가능한 대상 9개와 API·MCP client의 최대 8개 제한이 충돌한 것입니다. 고정 재현 50회와 다른 변형 4회가 실패했으며, 후속 계약 조정 과제로 남아 있습니다. 상세 항목과 예외 코드는 [Agent 시험 보고서](docs/arrangement/07_AGENT_TEST_RESULT_REPORT.md)를 참고하세요.
+위 표와 [Agent 시험 보고서](docs/arrangement/07_AGENT_TEST_RESULT_REPORT.md)는 계약 수정 전 기록입니다. 9인 전원 생존 시 의사가 선택 가능한 대상 9개와 API·MCP client의 최대 8개 제한 충돌은 아래 수정 및 재검증으로 해소했습니다.
 
 ### 현재 checkout에서 실행 가능한 테스트
 
-Backend에는 Agent 보고서용 테스트 2개 파일, 사용자 Front에는 테스트 2개 파일과 pytest 설정이 있습니다. 관리자·MCP의 과거 전체 테스트 소스는 현재 checkout에 없으므로 과거 통과 수치를 현재 전체 회귀 결과로 해석하지 않습니다.
+Backend에는 Agent 보고서용 합성 테스트 2개 파일과 사용자 Front 테스트가 있습니다. 관리자·MCP의 과거 전체 테스트 소스는 현재 checkout에 없으므로 과거 통과 수치를 현재 전체 회귀 결과로 해석하지 않습니다.
 
 ```bash
 .venv/bin/python -m pytest frontend_user/tests -c frontend_user/pytest.ini
@@ -397,12 +416,36 @@ AGENT_REPORT_SAMPLES=50 PYTHONPATH=. .venv/bin/python -m pytest \
 
 위 Agent 시험은 외부 LLM·MCP·DB를 호출하지 않습니다. 결과는 실행 환경과 현재 코드 기준으로 다시 확인해야 합니다. README 시연 제작에서는 실행 중인 사용자 앱에서 게임 생성·역할 확인·발언·밤 조사·투표·저장 후 홈 복귀를 직접 확인했습니다. 문서와 GIF만 변경했으므로 자동 회귀 테스트는 생략하고, Git·구현 근거와 로컬 링크, GIF 렌더링을 확인했습니다.
 
+Windows의 asyncio Proactor 이벤트 루프는 내부 통신에 loopback 소켓을 사용합니다. Agent 복구 테스트는 loopback 연결만 허용하고 그 밖의 소켓 연결과 실제 DB 연결은 계속 차단합니다. 2026-10-17 Windows 검증(Python 3.12.9, pytest 8.4.2)에서 API 정본과 MCP·동기화 검증 상한을 9로 통일하고, 9개 허용·10개 거부를 확인했습니다. `AGENT_REPORT_SAMPLES=50` 전체 Backend 시험은 **6,400개 통과**했습니다. 이 수치는 계약 수정 후 현재 checkout의 실행 결과이며, 위 과거 보고서의 실패 기록을 소급 변경하지 않습니다.
+
+### Front 기능 복구
+
+같은 날 WU-F3 화면 회귀에서 행동 단계에도 공개 timeline을 유지하고 본인 조사·역할 정보를 평문으로 즉시 확인하도록 수정했습니다. F3 집중 시험이 통과했습니다. WU-F2 홈 일반 피드백 경로, WU-F12 커스텀 능력 multiselect, WU-F1 UUID 설정과 UTF-8 브라우저 테스트, WU-F4 행동·마감 경고 live region, WU-F5 동기화 테스트와 UTF-8 읽기, WU-F6 완료 결과의 `새 게임` 이동을 복구했습니다. F6 receipt 집중 시험 42개와 Front 전체 회귀 `python -m pytest frontend_user/tests -c frontend_user/pytest.ini -q --tb=short`가 통과했습니다.
+
+### MCP 형식·경계 및 기동 확인
+
+MCP WU-M3 Resource 규칙 문장과 import 순서를 정리했고 해당 파일 Ruff·package compile이 통과했습니다. WU-M5 진단 sink 예외 처리를 비간섭 방식으로 정리하고 합성 sink 실패를 수동 확인했습니다. Engine URL 경계에서 loopback HTTP·HTTPS 허용, 외부 평문 HTTP 거부, 명시 옵션을 통한 사설망 HTTP 허용을 확인했습니다. 전체 MCP Ruff와 package compileall도 통과했습니다. MCP package 테스트 소스는 현재 checkout에 없어 재실행할 수 없습니다.
+
+WU-M8 기동 smoke에서 임시 loopback 포트의 `/mcp` initialize HTTP 200과 protocol `2025-03-26`을 확인한 뒤 종료·포트 해제를 확인했습니다. Backend 합성 설정·worker 비활성화 smoke에서는 `/health`가 HTTP 200과 `{"status":"ok"}`를 반환했습니다. 이 두 smoke는 저장소 연결을 포함하지 않았습니다.
+
+### 로컬 DB와 통합 실행 확인
+
+초기 Backend `/ready`는 팀 PostgreSQL 확인에는 성공했지만 Redis 연결이 실패해 HTTP 503을 반환했습니다. 사용자가 로컬 DB를 선택한 뒤 별도 `ai-mafia-isolated-v2` Compose 프로젝트에 PostgreSQL 55432와 Redis 56379를 기동했습니다. 초기 PostgreSQL 기동은 초기화 스크립트 CRLF shebang 문제로 실패했으며, Dockerfile에서 복사한 두 스크립트의 줄바꿈을 정규화해 깨끗한 격리 volume으로 재기동했습니다. 이미지 초기화와 Backend migration runner에서 12개 SQL을 확인했고 시나리오 5개, 각 18개 이상의 활성 template, persona 6개, 012 정리 대상 부재를 검증했습니다. 앱 role에서 `game_events` UPDATE·DELETE 권한을 회수하고 DDL·event UPDATE·DELETE 거부와 event SELECT·INSERT 허용을 확인했습니다. 실제 `.env` 값은 출력하거나 저장소에 추가하지 않았습니다.
+
+초기 검증용으로 만든 실패한 격리 Compose project는 컨테이너와 volume을 제거했고, 정상 격리 DB·Redis volume은 유지했습니다. 팀 Redis 서비스는 별도로 계속 실행 중이며 팀 PostgreSQL 데이터는 변경하지 않았습니다. Backend worker를 끈 `/ready`에서 로컬 PostgreSQL `SELECT 1`과 Redis `PING`이 모두 성공했습니다. `run_openai.ps1 --check`의 Backend·MCP·Front import 확인도 통과했습니다.
+
+Backend worker를 끈 MCP↔Backend 확인에서는 initialize가 HTTP 200, resource templates 2개·tools 3개·prompts 1개를 반환했습니다. 존재하지 않는 synthetic game 조회는 Backend 404가 MCP JSON-RPC 오류로 전달됐습니다. 실제 격리 런타임에서 ROLE_REVEAL 단계의 context 요청은 열려 있는 행동 window가 없어 Backend 409로 거부됐고, `BEGIN_GAME` 후 DAY_DISCUSSION public Resource 조회는 Backend를 거쳐 성공했습니다. 이 과정에서 생성한 게임과 synthetic user는 삭제해 격리 DB의 game·user 행이 0개임을 확인했습니다.
+
+격리 DB·Redis 위에서 Backend·MCP·Front를 함께 기동해 Backend `/health`·`/ready`, MCP initialize, Front `/_stcore/health`가 모두 HTTP 200을 반환했습니다. `DummyProvider`로 공개 API의 synthetic 게임 생성(201)·snapshot(200)·`BEGIN_GAME`(200)을 확인하고 게임을 삭제한 뒤 조회 404를 확인했습니다. 별도 DummyProvider E2E는 역할 공개, 토론, 밤 행동, 투표·재투표를 거쳐 3일차 `ENDED`/`COMPLETED`까지 진행했고, 정본의 105초 토론 deadline 뒤 `NIGHT_ACTION` 전이를 확인했습니다. 각 테스트 뒤 로컬 game·user 행이 0개였습니다.
+
+Front 브라우저에서는 연결 상태, 새 게임, 역할 공개, 첫날 진행, 저장 후 홈의 이어하기 표시, 삭제 후 빈 목록을 확인했습니다. 전체 Front 회귀, Backend 합성 보고서 6,400개, MCP Ruff·compileall이 통과했습니다. 외부 LLM·유료 OpenAI 호출은 검증하지 않았습니다.
+
 <a id="security"></a>
 
 ### 알려진 한계와 개선 과제
 
 - **인증:** `X-User-Id`는 UUID 기반 사용자 구분값이며 인증 증명이 아닙니다. 관리자 allowlist와 현재 최소 MCP도 공개 서비스용 인증을 대신하지 않습니다. 개인 개발 환경 또는 접근이 통제된 사설망에서 사용합니다.
-- **행동 계약:** 9인 의사 대상 수 제한 충돌을 해소하고, 허용 대상의 상한을 API·MCP·엔진 전체에서 일치시켜야 합니다.
+- **행동 계약:** 유효 대상 상한은 API 정본과 MCP·동기화 경계에서 9명으로 적용합니다. 9인 의사의 자기 보호를 허용하며 제출 시 Backend가 현재 역할·상태·window를 다시 검증합니다.
 - **AI 품질:** MCP 장애나 응답 지연 시 기본 발언·PASS 등 fallback이 발생할 수 있습니다. 모델이 선택한 PASS와 장애 대응을 구분해야 하며, 자연스러움·추론력·승률 개선은 별도 평가가 필요합니다.
 - **운영·복구:** 같은 DB를 사용하는 여러 Backend의 처리 대상을 포트만으로 격리할 수 없습니다. 실행 주체 식별과 공유 worker 운영 기준을 더 정교하게 만들 필요가 있습니다.
 - **검증 범위:** 현재 남은 테스트는 전체 기능을 포괄하지 않습니다. 관리자·MCP 회귀 테스트 복원과 다중 게임·장애 상황 검증이 필요합니다.
